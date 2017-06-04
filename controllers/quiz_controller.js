@@ -193,13 +193,13 @@ exports.check = function (req, res, next) {
 exports.randomPlay = function (req, res, next) {
 
     //si no existe sesion, creo el array de preguntas resueltas
-    if(!req.session.randomPlay){
-        req.session.randomPlay= {
+    if(!req.session.juegoRandom){
+        req.session.juegoRandom= {
             resueltos: []};
     }
 
     //Array con preguntas que ha he usado, si existe, sino -1
-    var usadas = req.session.randomPlay.resueltos.length ? req.session.randomPlay.resueltos : [-1];
+    var usadas = req.session.juegoRandom.resueltos.length ? req.session.juegoRandom.resueltos : [-1];
 
     //Guardo los ID que no esten en usadas, es decir, las que me faltan por sacar
     var whereOpt = {'id':{$notIn:usadas}}; 
@@ -224,24 +224,24 @@ exports.randomPlay = function (req, res, next) {
 
         .then(function (pregunta) {
 
-            var aciertos = req.session.randomPlay.resueltos.length;
             var quiz = pregunta[0];
 
             if(quiz) { //Si es quiz, sigo en randomplay con la pagina web
                 res.render('quizzes/random_play', {
-                    score: aciertos,
+                    score: req.session.juegoRandom.resueltos.length,
                     quiz: quiz
                 });
             } else { //si no lo es, no more
-            	req.session.randomPlay.resueltos = [];
+		tmp = req.session.juegoRandom.resueltos.length
+            	req.session.juegoRandom.resueltos = [];
                 	res.render('quizzes/random_nomore', {
-                    score: aciertos    
-                
+                    score: tmp
                 });
             }
 
 
-    }).catch(function (error) {
+    }).catch(function (error) {	
+	error.flash('error', 'Ojo!:' + error.message);
         next(error);
     });
 };
@@ -259,20 +259,16 @@ exports.randomCheck = function (req, res, next) {
  
     if(result){
     	//Añado el id a resueltos si está bien
-        req.session.randomPlay.resueltos.push(req.quiz.id);
+        req.session.juegoRandom.resueltos.push(req.quiz.id);
     }else{
     	//Reinicio resueltos si está mal respondido
-    	req.session.randomPlay.resueltos = [];
+    	req.session.juegoRandom.resueltos = [];
     }
-
-    //Obtengo el score mediante la longitud del array de resueltos
-    var aciertos = req.session.randomPlay.resueltos.length;
 
     //Envio de datos a la pagina
     res.render('quizzes/random_result', {
-        quiz: req.quiz,
         result: result,
-        score: aciertos,
+        score: req.session.juegoRandom.resueltos.length,
         answer: answer
     });
 
