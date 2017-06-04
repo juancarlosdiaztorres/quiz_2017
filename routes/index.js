@@ -30,8 +30,8 @@ router.delete('/quizzes/:quizId(\\d+)',    quizController.destroy);
 router.get('/quizzes/:quizId(\\d+)/play',  quizController.play);
 router.get('/quizzes/:quizId(\\d+)/check', quizController.check);
 
-//NUEVO: Rutas de RandomPlay y RandomCheck
-//Ojo nombres de los ficheros y OJO ayuda
+//Practica52:
+//Enruto randomplay y randomcheck con el Id del quiz
 router.get('/quizzes/randomplay', quizController.randomPlay);
 router.get('/quizzes/randomcheck/:quizId(\\d+)', quizController.randomCheck);
 

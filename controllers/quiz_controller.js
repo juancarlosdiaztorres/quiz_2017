@@ -192,46 +192,51 @@ exports.check = function (req, res, next) {
 //GET /quizzes/randomplay
 exports.randomPlay = function (req, res, next) {
 
-    //si no existe sesion, la creo
+    //si no existe sesion, creo el array de preguntas resueltas
     if(!req.session.randomPlay){
         req.session.randomPlay= {
             resueltos: []};
     }
 
-    // array con las preguntas ya resueltas
-    var used = req.session.randomPlay.resueltos.length ? req.session.randomPlay.resueltos : [-1];
+    //Array con preguntas que ha he usado, si existe, sino -1
+    var usadas = req.session.randomPlay.resueltos.length ? req.session.randomPlay.resueltos : [-1];
 
-    var whereOpt = {'id':{$notIn:used}}; //ojo
+    //Guardo los ID que no esten en usadas, es decir, las que me faltan por sacar
+    var whereOpt = {'id':{$notIn:usadas}}; 
 
-
+    //Obtengo cuantas quedan sin contestar
     models.Quiz.count(whereOpt)
-        .then(function (nQuestions) {
 
-            var idQuestion = Math.floor(Math.random() * nQuestions);
+
+        .then(function (preguntas) {
+
+          //Accedo a un ID random de los que me quedan
+          var idPregunta = parseInt(Math.random() * preguntas.length);
 
           var findOptions = {
-                limit:1,
-                'id': {$gt: idQuestion},
+                limit:1,  //solo cabe uno
+                'id': {$gt: idPregunta}, 
                 where: whereOpt
             };
-            return models.Quiz.findAll(findOptions);
+            //Busco todas las opciones que cumplan lo anterior
+            return models.Quiz.findAll(findOptions); 
         })
-        .then(function (question) {
 
-            var numAciertos = req.session.randomPlay.resueltos.length;
-            var quiz = question[0];
-            if(!quiz) {
-                req.session.randomPlay.resueltos = [];
-                res.render('quizzes/random_nomore', {
-                    score: numAciertos
-                });
-            } else {
-                //var quiz =question[0];
-                //ar numAciertos = req.session.numAciertos ? req.session.numAciertos : 0;
+        .then(function (pregunta) {
 
+            var aciertos = req.session.randomPlay.resueltos.length;
+            var quiz = pregunta[0];
+
+            if(quiz) { //Si es quiz, sigo en randomplay con la pagina web
                 res.render('quizzes/random_play', {
-                    score: numAciertos,
+                    score: aciertos,
                     quiz: quiz
+                });
+            } else { //si no lo es, no more
+            	req.session.randomPlay.resueltos = [];
+                	res.render('quizzes/random_nomore', {
+                    score: aciertos    
+                
                 });
             }
 
@@ -240,27 +245,34 @@ exports.randomPlay = function (req, res, next) {
         next(error);
     });
 };
+
+//Segundo modulo a programar
 // GET /quizzes/randomcheck
 exports.randomCheck = function (req, res, next) {
+
     //Cojo la respuesta del query
     var answer = req.query.answer || "";
 
-    //La pongo bonita
+    //Minus y quito espacios
     var result = answer.toLowerCase().trim() === req.quiz.answer.toLowerCase().trim();
 
-    //Creo o actualizo la base de datos, subiendo el id a la misma
-    if(!result){
-        req.session.randomPlay.resueltos = [];
+ 
+    if(result){
+    	//Añado el id a resueltos si está bien
+        req.session.randomPlay.resueltos.push(req.quiz.id);
     }else{
-    req.session.randomPlay.resueltos.push(req.quiz.id);
+    	//Reinicio resueltos si está mal respondido
+    	req.session.randomPlay.resueltos = [];
     }
-    var numAciertos = req.session.randomPlay.resueltos.length;
 
-    //Saco la longitud y envio todos los parametros en res
+    //Obtengo el score mediante la longitud del array de resueltos
+    var aciertos = req.session.randomPlay.resueltos.length;
+
+    //Envio de datos a la pagina
     res.render('quizzes/random_result', {
         quiz: req.quiz,
         result: result,
-        score: numAciertos,
+        score: aciertos,
         answer: answer
     });
 
