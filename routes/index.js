@@ -30,5 +30,15 @@ router.delete('/quizzes/:quizId(\\d+)',    quizController.destroy);
 router.get('/quizzes/:quizId(\\d+)/play',  quizController.play);
 router.get('/quizzes/:quizId(\\d+)/check', quizController.check);
 
+//NUEVO: Rutas de RandomPlay y RandomCheck
+//Ojo nombres de los ficheros y OJO ayuda
+router.get('/quizzes/randomplay', quizController.randomPlay);
+router.get('/quizzes/randomcheck/:quizId(\\d+)', quizController.randomCheck);
+
+
+//Pagina de Ayuda
+router.get('/Ayuda', function(req, res, next) {
+    res.render('Ayuda');
+});
 
 module.exports = router;
