@@ -8,7 +8,7 @@ exports.load = function (req, res, next, quizId) {
 
     models.Quiz.findById(quizId, {
         include: [
-            models.Tip,
+            {model: models.Tip, include: [{model: models.User, as: 'Author'}]},
             {model: models.User, as: 'Author'}
         ]
     })
@@ -222,3 +222,107 @@ exports.check = function (req, res, next) {
         answer: answer
     });
 };
+
+
+//GET /quizzes/randomplay
+exports.randomPlay = function (req, res, next) {
+
+    //si no existe sesion, creo el array de preguntas resueltas
+    if(!req.session.juegoRandom){
+        req.session.juegoRandom= {
+            resueltos: []};
+    }
+
+    //Array con preguntas que ha he usado, si existe, sino -1
+    var usadas = req.session.juegoRandom.resueltos.length ? req.session.juegoRandom.resueltos : [-1];
+
+    //Guardo los ID que no esten en usadas, es decir, las que me faltan por sacar
+    var whereOpt = {'id':{$notIn:usadas}}; 
+
+    //Obtengo cuantas quedan sin contestar
+    models.Quiz.count(whereOpt)
+
+
+        .then(function (preguntas) {
+
+          //Accedo a un ID random de los que me quedan
+          var idPregunta = parseInt(Math.random() * preguntas.length);
+
+          var findOptions = {
+                limit:1,  //solo cabe uno
+                'id': {$gt: idPregunta}, 
+                where: whereOpt
+            };
+            //Busco todas las opciones que cumplan lo anterior
+            return models.Quiz.findAll(findOptions); 
+        })
+
+        .then(function (pregunta) {
+
+            var quiz = pregunta[0];
+
+            if(quiz) { //Si es quiz, sigo en randomplay con la pagina web
+                res.render('quizzes/random_play', {
+                    score: req.session.juegoRandom.resueltos.length,
+                    quiz: quiz
+                });
+            } else { //si no lo es, no more
+		tmp = req.session.juegoRandom.resueltos.length
+            	req.session.juegoRandom.resueltos = [];
+                res.render('quizzes/random_nomore', {
+                    score: tmp
+                });
+            }
+
+
+    }).catch(function (error) {	
+	error.flash('error', 'Ojo!:' + error.message);
+        next(error);
+    });
+};
+
+//Segundo modulo a programar
+// GET /quizzes/randomcheck
+exports.randomCheck = function (req, res, next) {
+
+    //si no existe sesion, creo el array de preguntas resueltas (copiado de arriba)
+    if(!req.session.juegoRandom){
+        req.session.juegoRandom= {
+            resueltos: []};
+    }
+
+    //Calculo numero de aciertos para renderizar luego
+    var aciertos = req.session.juegoRandom.resueltos.length;    
+
+    //Cojo la respuesta del query
+    var answer = req.query.answer || "";
+
+    //Minus y quito espacios (transparencias)
+    var result = answer.toLowerCase().trim() === req.quiz.answer.toLowerCase().trim();
+
+ 
+    if(result){
+    	//Añado el id a resueltos si está bien
+        aciertos++;
+        req.session.juegoRandom.resueltos.push(req.quiz.id);
+    }else{
+    	//Reinicio resueltos si está mal respondido
+        aciertos = 0;
+    	req.session.juegoRandom.resueltos = [];
+    }
+
+    //Envio de datos a la pagina
+    res.render('quizzes/random_result', {
+        result: result,
+        score: aciertos,
+        answer: answer
+    });
+
+};
+
+
+
+
+
+
+

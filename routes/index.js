@@ -127,9 +127,17 @@ router.put('/quizzes/:quizId(\\d+)/tips/:tipId(\\d+)/accept',
     sessionController.loginRequired,
     quizController.adminOrAuthorRequired,
     tipController.accept);
-router.delete('/quizzes/:quizId(\\d+)/tips/:tipId(\\d+)',
-    sessionController.loginRequired,
-    tipController.destroy);
+router.delete('/quizzes/:quizId(\\d+)/tips/:tipId(\\d+)', sessionController.loginRequired, tipController.destroy);
 
+//Practica52:
+//Enruto randomplay y randomcheck con el Id del quiz
+router.get('/quizzes/randomplay', quizController.randomPlay);
+router.get('/quizzes/randomcheck/:quizId(\\d+)', quizController.randomCheck);
+
+
+//Pagina de Ayuda
+router.get('/Ayuda', function(req, res, next) {
+    res.render('Ayuda');
+});
 
 module.exports = router;
