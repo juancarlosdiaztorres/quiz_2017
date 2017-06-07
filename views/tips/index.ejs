@@ -13,6 +13,10 @@
 
             <% } %>
 
+	<small>
+		(by <span id="autor"><%= tip.Author ? tip.Author.username : "Anónimo" %></span>)
+	</small>
+
             <% if (!tip.accepted &&
                     (session.user && (session.user.isAdmin || (quizAuthorId && quizAuthorId === session.user.id)))) { %>
 
